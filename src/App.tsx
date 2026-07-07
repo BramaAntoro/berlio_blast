@@ -386,18 +386,6 @@ export default function App() {
         ))}
       </div>
 
-      {/* Judul Di Atas */}
-      <div className="absolute top-[3%] left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 md:gap-3">
-        <svg viewBox="0 0 24 24" className="w-5 h-5 md:w-7 md:h-7" fill="none">
-          <path d="M12 0 L14.5 9.5 L24 12 L14.5 14.5 L12 24 L9.5 14.5 L0 12 L9.5 9.5 Z" fill="#38bdf8" />
-        </svg>
-        <h1 className="brand-title text-2xl md:text-4xl font-extrabold tracking-wide bg-gradient-to-b from-yellow-200 via-yellow-400 to-amber-500 bg-clip-text text-transparent">
-          GACHA BERUNTUNG
-        </h1>
-        <svg viewBox="0 0 24 24" className="w-5 h-5 md:w-7 md:h-7" fill="none">
-          <path d="M12 0 L14.5 9.5 L24 12 L14.5 14.5 L12 24 L9.5 14.5 L0 12 L9.5 9.5 Z" fill="#38bdf8" />
-        </svg>
-      </div>
 
       {/* Wrapper Utama Mesin Gacha */}
       <div className="relative w-full max-w-[520px] aspect-[550/631] flex items-center justify-center scale-105 md:scale-110 transition-transform [perspective:1000px]">
