@@ -33,8 +33,8 @@ export default function App() {
 
   const tuasRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const fadeIntervalRef = useRef<NodeJS.Timeout | null>(null);
-
+  const fadeIntervalRef = useRef<number | null>(null);
+  
   useEffect(() => {
     const audio = new Audio(GACHA_AUDIO_URL);
     audio.loop = true;
@@ -406,7 +406,6 @@ export default function App() {
           <div className="w-full max-w-sm rounded-3xl bg-white shadow-2xl overflow-hidden animate-[fadeIn_.25s_ease]">
             {/* Header */}
             <div className="flex flex-col items-center px-8 pt-8">
-
               <h2 className="mt-5 text-2xl font-bold text-slate-900">
                 Selamat!
               </h2>
