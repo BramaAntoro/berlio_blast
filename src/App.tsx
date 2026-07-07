@@ -47,141 +47,21 @@ export default function App() {
   }, []);
 
   const listKapsul: KapsulItem[] = [
-    {
-      id: 1,
-      src: capsulBiru,
-      top: "15%",
-      left: "22%",
-      rotation: "rotate-[15deg]",
-      scale: "scale-[0.85]",
-      zIndex: "z-10",
-    },
-    {
-      id: 2,
-      src: capsulMerah,
-      top: "10%",
-      left: "38%",
-      rotation: "rotate-[-35deg]",
-      scale: "scale-[0.88]",
-      zIndex: "z-10",
-    },
-    {
-      id: 3,
-      src: capsulBiru,
-      top: "12%",
-      left: "54%",
-      rotation: "rotate-[40deg]",
-      scale: "scale-[0.85]",
-      zIndex: "z-10",
-    },
-    {
-      id: 4,
-      src: capsulMerah,
-      top: "20%",
-      left: "66%",
-      rotation: "rotate-[-12deg]",
-      scale: "scale-[0.82]",
-      zIndex: "z-10",
-    },
-    {
-      id: 5,
-      src: capsulKuning,
-      top: "32%",
-      left: "12%",
-      rotation: "rotate-[-60deg]",
-      scale: "scale-95",
-      zIndex: "z-20",
-    },
-    {
-      id: 6,
-      src: capsulMerah,
-      top: "24%",
-      left: "26%",
-      rotation: "rotate-[110deg]",
-      scale: "scale-100",
-      zIndex: "z-20",
-    },
-    {
-      id: 7,
-      src: capsulKuning,
-      top: "26%",
-      left: "44%",
-      rotation: "rotate-[15deg]",
-      scale: "scale-100",
-      zIndex: "z-20",
-    },
-    {
-      id: 8,
-      src: capsulBiru,
-      top: "30%",
-      left: "58%",
-      rotation: "rotate-[-50deg]",
-      scale: "scale-95",
-      zIndex: "z-20",
-    },
-    {
-      id: 9,
-      src: capsulBiru,
-      top: "44%",
-      left: "16%",
-      rotation: "rotate-[5deg]",
-      scale: "scale-105",
-      zIndex: "z-30",
-    },
-    {
-      id: 10,
-      src: capsulMerah,
-      top: "42%",
-      left: "32%",
-      rotation: "rotate-[-25deg]",
-      scale: "scale-105",
-      zIndex: "z-30",
-    },
-    {
-      id: 11,
-      src: capsulKuning,
-      top: "38%",
-      left: "48%",
-      rotation: "rotate-[75deg]",
-      scale: "scale-105",
-      zIndex: "z-30",
-    },
-    {
-      id: 12,
-      src: capsulMerah,
-      top: "42%",
-      left: "64%",
-      rotation: "rotate-[85deg]",
-      scale: "scale-100",
-      zIndex: "z-30",
-    },
-    {
-      id: 13,
-      src: capsulMerah,
-      top: "54%",
-      left: "36%",
-      rotation: "rotate-[12deg]",
-      scale: "scale-110",
-      zIndex: "z-40",
-    },
-    {
-      id: 14,
-      src: capsulKuning,
-      top: "52%",
-      left: "22%",
-      rotation: "rotate-[-20deg]",
-      scale: "scale-105",
-      zIndex: "z-40",
-    },
-    {
-      id: 15,
-      src: capsulBiru,
-      top: "50%",
-      left: "52%",
-      rotation: "rotate-[35deg]",
-      scale: "scale-105",
-      zIndex: "z-40",
-    },
+    { id: 1, src: capsulBiru, top: "15%", left: "22%", rotation: "rotate-[15deg]", scale: "scale-[0.85]", zIndex: "z-10" },
+    { id: 2, src: capsulMerah, top: "10%", left: "38%", rotation: "rotate-[-35deg]", scale: "scale-[0.88]", zIndex: "z-10" },
+    { id: 3, src: capsulBiru, top: "12%", left: "54%", rotation: "rotate-[40deg]", scale: "scale-[0.85]", zIndex: "z-10" },
+    { id: 4, src: capsulMerah, top: "20%", left: "66%", rotation: "rotate-[-12deg]", scale: "scale-[0.82]", zIndex: "z-10" },
+    { id: 5, src: capsulKuning, top: "32%", left: "12%", rotation: "rotate-[-60deg]", scale: "scale-95", zIndex: "z-20" },
+    { id: 6, src: capsulMerah, top: "24%", left: "26%", rotation: "rotate-[110deg]", scale: "scale-100", zIndex: "z-20" },
+    { id: 7, src: capsulKuning, top: "26%", left: "44%", rotation: "rotate-[15deg]", scale: "scale-100", zIndex: "z-20" },
+    { id: 8, src: capsulBiru, top: "30%", left: "58%", rotation: "rotate-[-50deg]", scale: "scale-95", zIndex: "z-20" },
+    { id: 9, src: capsulBiru, top: "44%", left: "16%", rotation: "rotate-[5deg]", scale: "scale-105", zIndex: "z-30" },
+    { id: 10, src: capsulMerah, top: "42%", left: "32%", rotation: "rotate-[-25deg]", scale: "scale-105", zIndex: "z-30" },
+    { id: 11, src: capsulKuning, top: "38%", left: "48%", rotation: "rotate-[75deg]", scale: "scale-105", zIndex: "z-30" },
+    { id: 12, src: capsulMerah, top: "42%", left: "64%", rotation: "rotate-[85deg]", scale: "scale-100", zIndex: "z-30" },
+    { id: 13, src: capsulMerah, top: "54%", left: "36%", rotation: "rotate-[12deg]", scale: "scale-110", zIndex: "z-40" },
+    { id: 14, src: capsulKuning, top: "52%", left: "22%", rotation: "rotate-[-20deg]", scale: "scale-105", zIndex: "z-40" },
+    { id: 15, src: capsulBiru, top: "50%", left: "52%", rotation: "rotate-[35deg]", scale: "scale-105", zIndex: "z-40" },
   ];
 
   const playAudio = () => {
@@ -214,23 +94,24 @@ export default function App() {
     return "100 Points / Snack / Minuman";
   };
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    e.preventDefault();
+  const handleStart = (e: React.MouseEvent | React.TouchEvent) => {
+    if (e.cancelable) e.preventDefault();
     setDroppedCapsule(null);
     setIsDragging(true);
     playAudio();
   };
 
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!isDragging || !tuasRef.current) return;
+    // Fungsi kalkulasi sudut rotasi tuas dari posisi pointer
+    const calculateAngle = (clientX: number, clientY: number) => {
+      if (!tuasRef.current) return;
 
       const rect = tuasRef.current.getBoundingClientRect();
       const pivotX = rect.left + rect.width * 0.47;
       const pivotY = rect.top + rect.height * 0.81;
 
-      const deltaX = e.clientX - pivotX;
-      const deltaY = e.clientY - pivotY;
+      const deltaX = clientX - pivotX;
+      const deltaY = clientY - pivotY;
 
       let currentAngle = Math.atan2(deltaY, deltaX) * (180 / Math.PI) + 18;
       if (currentAngle < 0) currentAngle = 0;
@@ -243,7 +124,20 @@ export default function App() {
       }
     };
 
-    const handleMouseUp = () => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+      calculateAngle(e.clientX, e.clientY);
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!isDragging) return;
+      // Mencegah reload/scroll secara agresif saat jari ditarik ke bawah
+      if (e.cancelable) e.preventDefault(); 
+      const touch = e.touches[0];
+      calculateAngle(touch.clientX, touch.clientY);
+    };
+
+    const handleRelease = () => {
       if (isDragging) {
         setIsDragging(false);
         setAngle(0);
@@ -273,17 +167,21 @@ export default function App() {
 
     if (isDragging) {
       window.addEventListener("mousemove", handleMouseMove);
-      window.addEventListener("mouseup", handleMouseUp);
+      window.addEventListener("mouseup", handleRelease);
+      window.addEventListener("touchmove", handleTouchMove, { passive: false });
+      window.addEventListener("touchend", handleRelease);
     }
 
     return () => {
       window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
+      window.removeEventListener("mouseup", handleRelease);
+      window.removeEventListener("touchmove", handleTouchMove);
+      window.removeEventListener("touchend", handleRelease);
     };
   }, [isDragging, spinState]);
 
   return (
-    <div className="w-full min-h-screen bg-[#0f172a] flex items-center justify-center p-4 select-none relative overflow-hidden">
+    <div className="w-full min-h-screen bg-[#0f172a] flex items-center justify-center p-2 select-none relative overflow-hidden touch-none">
       <style>{`
         @keyframes gachaShuffle {
           0% { transform: translate(0px, 0px) rotate(0deg); }
@@ -294,20 +192,10 @@ export default function App() {
           100% { transform: translate(0px, 0px) rotate(360deg); }
         }
         @keyframes capsulePopOut {
-          0% {
-            transform: translate(0, -10px) scale(0);
-            opacity: 0;
-          }
-          60% {
-            transform: translate(0, 5px) scale(1.1) rotate(20deg);
-            opacity: 1;
-          }
-          80% {
-            transform: translate(0, -3px) scale(0.95) rotate(-10deg);
-          }
-          100% {
-            transform: translate(0, 0) scale(1) rotate(0deg);
-          }
+          0% { transform: translate(0, -10px) scale(0); opacity: 0; }
+          60% { transform: translate(0, 5px) scale(1.1) rotate(20deg); opacity: 1; }
+          80% { transform: translate(0, -3px) scale(0.95) rotate(-10deg); }
+          100% { transform: translate(0, 0) scale(1) rotate(0deg); }
         }
         @keyframes capsuleWobble {
           0%, 100% { transform: rotate(0deg); }
@@ -321,7 +209,6 @@ export default function App() {
         .animate-medium { animation: gachaShuffle 0.35s ease-in-out infinite; }
         .animate-slow { animation: gachaShuffle 0.75s ease-out infinite; }
         
-        /* Eksekusi animasi pop-out dari lubang hitam selama 0.5s, lalu lanjut wobble looping */
         .animate-capsule-release {
           animation: 
             capsulePopOut 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards,
@@ -330,7 +217,7 @@ export default function App() {
       `}</style>
 
       {/* Wrapper Utama Mesin */}
-      <div className="relative w-full max-w-[480px] aspect-[550/631] flex items-center justify-center">
+      <div className="relative w-full max-w-[520px] aspect-[550/631] flex items-center justify-center scale-105 md:scale-110 transition-transform">
         {isDragging && (
           <div className="absolute inset-0 z-50 cursor-grabbing bg-transparent" />
         )}
@@ -371,21 +258,22 @@ export default function App() {
         {droppedCapsule && (
           <div
             onClick={() => setShowModal(true)}
-            className="absolute bottom-[10.5%] left-[41%] w-[18%] aspect-square z-40 cursor-pointer animate-capsule-release flex items-center justify-center"
+            className="absolute bottom-[9.5%] left-[39%] w-[22%] aspect-square z-40 cursor-pointer animate-capsule-release flex items-center justify-center"
           >
             <img
               src={droppedCapsule}
               alt="Kapsul Hadiah Keluar"
-              className="w-full h-full object-contain drop-shadow-[0_8px_6px_rgba(0,0,0,0.6)]"
+              className="w-full h-full object-contain filter drop-shadow-[0_10px_8px_rgba(0,0,0,0.65)]"
             />
           </div>
         )}
 
-        {/* Layer 4: Tuas Engkol */}
+        {/* Layer 4: Tuas */}
         <div
           ref={tuasRef}
-          onMouseDown={handleMouseDown}
-          className={`absolute w-[25%] h-[35%] right-[7%] top-[40.5%] z-10 cursor-grab active:cursor-grabbing scale-[1.55]
+          onMouseDown={handleStart}
+          onTouchStart={handleStart}
+          className={`absolute w-[25%] h-[35%] right-[7%] top-[40.5%] z-10 cursor-grab active:cursor-grabbing scale-[1.75] touch-none
             ${!isDragging ? "transition-transform duration-600 cubic-bezier(0.16, 1, 0.3, 1)" : ""}`}
           style={{
             transformOrigin: "47% 81%",
@@ -402,7 +290,7 @@ export default function App() {
 
       {/* POP-UP / MODAL HADIAH */}
       {showModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-md p-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
           <div className="w-full max-w-sm rounded-3xl bg-white shadow-2xl overflow-hidden animate-[fadeIn_.25s_ease]">
             {/* Header */}
             <div className="flex flex-col items-center px-8 pt-8">
@@ -434,16 +322,16 @@ export default function App() {
                   setDroppedCapsule(null);
                 }}
                 className="
-            w-full
-            rounded-2xl
-            bg-slate-900
-            py-4
-            text-white
-            font-semibold
-            transition
-            hover:bg-slate-800
-            active:scale-[0.98]
-          "
+                  w-full
+                  rounded-2xl
+                  bg-slate-900
+                  py-4
+                  text-white
+                  font-semibold
+                  transition
+                  hover:bg-slate-800
+                  active:scale-[0.98]
+                "
               >
                 Ambil Hadiah
               </button>
