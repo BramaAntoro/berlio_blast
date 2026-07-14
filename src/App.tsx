@@ -6,6 +6,9 @@ import tuas from "./assets/images/tuas.png";
 import capsulBiru from "./assets/images/capsul_biru.png";
 import capsulKuning from "./assets/images/capsul_kuning.png";
 import capsulMerah from "./assets/images/capsul_merah.png";
+import berlio1 from "./assets/images/berlio1.png";
+import berlio2 from "./assets/images/berlio2.png";
+import berlio3 from "./assets/images/berlio3.png";
 
 const GACHA_AUDIO_URL =
   "https://upload.wikimedia.org/wikipedia/commons/4/47/Charkha_spinning_wheel_sound.mp3";
@@ -46,7 +49,22 @@ interface StepInfo {
   label: string;
 }
 
-// --- SEGMEN VECTOR MASCOT BERLIO (CUTE DIAMOND CHARACTER) ---
+// --- SEGMEN MASCOT BERLIO (PAKAI GAMBAR ASLI, BUKAN VECTOR SVG LAGI) ---
+// Peta ekspresi -> gambar Berlio yang sesuai suasana/pose:
+// - berlio1: pose berdiri tenang sambil pegang koin (dipakai utk happy & wink)
+// - berlio2: pose kedua tangan ke atas merayakan (dipakai utk excited & celebrate)
+// - berlio3: pose kaget, tangan di pipi (dipakai utk surprised)
+const BERLIO_EXPRESSION_MAP: Record<
+  "happy" | "excited" | "surprised" | "wink" | "celebrate",
+  string
+> = {
+  happy: berlio1,
+  wink: berlio1,
+  excited: berlio2,
+  celebrate: berlio2,
+  surprised: berlio3,
+};
+
 function BerlioMascot({
   expression,
   className = "w-20 h-20",
@@ -57,148 +75,13 @@ function BerlioMascot({
   style?: React.CSSProperties;
 }) {
   return (
-    <svg
-      viewBox="0 0 120 120"
-      className={`${className} drop-shadow-[0_8px_16px_rgba(2,132,199,0.35)] select-none pointer-events-none`}
+    <img
+      src={BERLIO_EXPRESSION_MAP[expression]}
+      alt={`Berlio ${expression}`}
+      draggable={false}
+      className={`${className} object-contain drop-shadow-[0_8px_16px_rgba(2,132,199,0.35)] select-none pointer-events-none`}
       style={style}
-    >
-      <defs>
-        <linearGradient id="diaGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#67e8f9" /> {/* cyan-300 */}
-          <stop offset="50%" stopColor="#0284c7" /> {/* sky-600 */}
-          <stop offset="100%" stopColor="#0369a1" /> {/* sky-700 */}
-        </linearGradient>
-        <linearGradient id="capeGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#2563eb" /> {/* blue-600 */}
-          <stop offset="100%" stopColor="#1e3a8a" /> {/* blue-900 */}
-        </linearGradient>
-        <linearGradient id="goldGradBadge" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#fef08a" /> {/* yellow-200 */}
-          <stop offset="100%" stopColor="#ca8a04" /> {/* yellow-600 */}
-        </linearGradient>
-        <filter id="cuteGlow" x="-20%" y="-20%" width="140%" height="140%">
-          <feGaussianBlur stdDeviation="3" result="blur" />
-          <feComposite in="SourceGraphic" in2="blur" operator="over" />
-        </filter>
-      </defs>
-
-      {/* Cape (Royal Blue) */}
-      <path
-        d="M 22,65 Q 5,98 18,106 Q 60,116 102,106 Q 115,98 98,65 Z"
-        fill="url(#capeGrad)"
-        stroke="#1d4ed8"
-        strokeWidth="2.5"
-        strokeLinejoin="round"
-      />
-      {/* Cape Collar Ribbon */}
-      <path d="M 33,56 Q 60,72 87,56" fill="none" stroke="#fbbf24" strokeWidth="4.5" strokeLinecap="round" />
-
-      {/* Stubby Feet */}
-      <ellipse cx="44" cy="109" rx="9" ry="4.5" fill="#0284c7" stroke="#1d4ed8" strokeWidth="2" />
-      <ellipse cx="76" cy="109" rx="9" ry="4.5" fill="#0284c7" stroke="#1d4ed8" strokeWidth="2" />
-
-      {/* Body & Golden Shield */}
-      <path d="M 38,65 L 82,65 L 76,96 L 44,96 Z" fill="#0284c7" stroke="#1e3a8a" strokeWidth="2.5" />
-      <path d="M 46,70 L 74,70 L 70,91 L 50,91 Z" fill="url(#goldGradBadge)" stroke="#b45309" strokeWidth="1.5" />
-      <text
-        x="60"
-        y="85"
-        textAnchor="middle"
-        fontSize="13"
-        fontWeight="900"
-        fill="#0f172a"
-        style={{ fontFamily: "'Arial Black', sans-serif" }}
-      >
-        90
-      </text>
-
-      {/* Arms */}
-      {expression === "celebrate" || expression === "excited" ? (
-        <>
-          {/* Celebrating arms up */}
-          <path d="M 34,65 Q 12,42 18,36" fill="none" stroke="#0284c7" strokeWidth="9.5" strokeLinecap="round" />
-          <path d="M 86,65 Q 108,42 102,36" fill="none" stroke="#0284c7" strokeWidth="9.5" strokeLinecap="round" />
-        </>
-      ) : expression === "wink" ? (
-        <>
-          {/* Left hand thumbs up */}
-          <path d="M 34,65 Q 16,56 12,50" fill="none" stroke="#0284c7" strokeWidth="9.5" strokeLinecap="round" />
-          <circle cx="12" cy="47" r="6" fill="#0284c7" stroke="#1e3a8a" strokeWidth="1.5" />
-          <path d="M 12,47 L 10,43" stroke="#e0f2fe" strokeWidth="2" strokeLinecap="round" />
-          {/* Right hand waving */}
-          <path d="M 86,65 Q 98,75 106,68" fill="none" stroke="#0284c7" strokeWidth="9.5" strokeLinecap="round" />
-        </>
-      ) : (
-        <>
-          {/* Standing arms */}
-          <path d="M 34,65 Q 18,72 23,86" fill="none" stroke="#0284c7" strokeWidth="9.5" strokeLinecap="round" />
-          <path d="M 86,65 Q 102,72 97,86" fill="none" stroke="#0284c7" strokeWidth="9.5" strokeLinecap="round" />
-        </>
-      )}
-
-      {/* Diamond Head (Rounded facet design) */}
-      <path
-        d="M 60,8 L 108,35 L 102,62 L 60,98 L 18,62 L 12,35 Z"
-        fill="url(#diaGrad)"
-        stroke="#0f172a"
-        strokeWidth="4"
-        strokeLinejoin="round"
-      />
-      {/* Facet lines */}
-      <path d="M 60,8 L 60,98" fill="none" stroke="#bae6fd" strokeWidth="1.2" opacity="0.45" />
-      <path d="M 12,35 L 108,35" fill="none" stroke="#bae6fd" strokeWidth="1.8" opacity="0.55" />
-      <path d="M 60,8 L 33,35 L 60,57 L 87,35 L 60,8 Z" fill="none" stroke="#bae6fd" strokeWidth="1.8" opacity="0.45" />
-      <path d="M 18,62 L 33,35 L 60,98 L 87,35 L 102,62" fill="none" stroke="#bae6fd" strokeWidth="1.2" opacity="0.35" />
-
-      {/* Cheeks */}
-      <circle cx="34" cy="53" r="7" fill="#f43f5e" opacity="0.4" />
-      <circle cx="86" cy="53" r="7" fill="#f43f5e" opacity="0.4" />
-
-      {/* Eyes */}
-      {expression === "wink" ? (
-        <>
-          {/* Left eye closed winking */}
-          <path d="M 26,49 Q 34,44 38,51" fill="none" stroke="#0f172a" strokeWidth="4.5" strokeLinecap="round" />
-          {/* Right eye shiny */}
-          <circle cx="82" cy="49" r="8.5" fill="#0f172a" />
-          <circle cx="80" cy="46" r="3" fill="#ffffff" />
-          <circle cx="84" cy="52" r="1.5" fill="#ffffff" />
-        </>
-      ) : expression === "excited" || expression === "celebrate" ? (
-        <>
-          {/* Squinty happy anime eyes ^_^ */}
-          <path d="M 25,53 L 34,45 L 42,52" fill="none" stroke="#0f172a" strokeWidth="5.5" strokeLinecap="round" strokeLinejoin="round" />
-          <path d="M 95,53 L 86,45 L 78,52" fill="none" stroke="#0f172a" strokeWidth="5.5" strokeLinecap="round" strokeLinejoin="round" />
-        </>
-      ) : expression === "surprised" ? (
-        <>
-          {/* Big shocked eyes */}
-          <circle cx="34" cy="49" r="9" fill="#0f172a" />
-          <circle cx="32" cy="46" r="3.5" fill="#ffffff" />
-          <circle cx="86" cy="49" r="9" fill="#0f172a" />
-          <circle cx="84" cy="46" r="3.5" fill="#ffffff" />
-        </>
-      ) : (
-        <>
-          {/* Standard cute eyes */}
-          <circle cx="34" cy="49" r="8" fill="#0f172a" />
-          <circle cx="32" cy="46" r="3" fill="#ffffff" />
-          <circle cx="36" cy="52" r="1.5" fill="#ffffff" />
-          <circle cx="86" cy="49" r="8" fill="#0f172a" />
-          <circle cx="84" cy="46" r="3" fill="#ffffff" />
-          <circle cx="88" cy="52" r="1.5" fill="#ffffff" />
-        </>
-      )}
-
-      {/* Mouth */}
-      {expression === "surprised" ? (
-        <circle cx="60" cy="64" r="5.5" fill="#0f172a" />
-      ) : expression === "excited" || expression === "celebrate" || expression === "happy" ? (
-        <path d="M 50,59 Q 60,70 70,59" fill="none" stroke="#0f172a" strokeWidth="4.5" strokeLinecap="round" />
-      ) : (
-        <path d="M 52,61 Q 60,66 68,61" fill="none" stroke="#0f172a" strokeWidth="3.5" strokeLinecap="round" />
-      )}
-    </svg>
+    />
   );
 }
 
@@ -1516,7 +1399,19 @@ export default function App() {
             {!isCapsuleOpened ? (
               /* --- STEP 5: LIHAT HADIAHMU! (TAP KAPSUL) --- */
               <div className="w-full flex flex-col items-center">
-                <div className="text-center mt-3 z-10">
+                {/* Mascot Berlio (pose kaget) menemani proses membuka kapsul */}
+                <div className="absolute top-[-52px] z-20 flex flex-col items-center pointer-events-none">
+                  <BerlioMascot
+                    expression="surprised"
+                    className="w-24 h-24 animate-bounce"
+                    style={{ animationDuration: "2.4s" }}
+                  />
+                  <div className="bg-amber-400 text-slate-950 font-black text-[9px] tracking-widest px-2.5 py-0.5 rounded-full uppercase shadow-md -mt-1.5 animate-pulse">
+                    {isCapsuleOpening ? "DEG-DEGAN! 😲" : "AYO BUKA! 😲"}
+                  </div>
+                </div>
+
+                <div className="text-center mt-8 z-10">
                   <h2 className="text-4xl font-extrabold text-white tracking-wide mb-0.5">YEAY!</h2>
                   <p className="text-xs font-bold text-amber-300 tracking-widest uppercase opacity-95">
                     LIHAT HADIAHMU!
