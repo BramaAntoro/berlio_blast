@@ -22,6 +22,12 @@ export default function Sidebar({ currentView, onNavigate }: SidebarProps) {
         >
           Prize Logbook
         </button>
+        <button
+          onClick={() => onNavigate("membership")}
+          className={`whitespace-nowrap p-2 rounded ${currentView === "membership" ? "bg-blue-700" : "hover:bg-slate-800"}`}
+        >
+          Membership
+        </button>
       </nav>
     </aside>
   );

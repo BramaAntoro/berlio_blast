@@ -15,6 +15,13 @@ interface LogbookEntry {
   date: string;
 }
 
+interface Member {
+  id: number;
+  name: string;
+  joinDate: string;
+  prizes: { id: number; name: string; claimed: boolean }[];
+}
+
 interface KepalaTokoProps {
   navigate: (path: string) => void;
 }
@@ -29,6 +36,11 @@ export default function KepalaToko({}: KepalaTokoProps) {
     { id: 1, prizeName: "Rice Cooker", userName: "Budi", date: "2026-07-15" },
     { id: 2, prizeName: "Voucher Belanja", userName: "Siti", date: "2026-07-14" },
   ]);
+  const [members, setMembers] = useState<Member[]>([
+    { id: 1, name: "Budi", joinDate: "2026-01-10", prizes: [{ id: 101, name: "Rice Cooker", claimed: false }, { id: 102, name: "Voucher", claimed: true }] },
+    { id: 2, name: "Siti", joinDate: "2026-03-15", prizes: [{ id: 103, name: "Ciki", claimed: false }] },
+  ]);
+  const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [editingPrize, setEditingPrize] = useState<Prize | null>(null);
   const [newName, setNewName] = useState("");
   const [newInitialStock, setNewInitialStock] = useState(0);
@@ -67,8 +79,20 @@ export default function KepalaToko({}: KepalaTokoProps) {
     setPrizes(prizes.filter((p) => p.id !== id));
   };
 
+  const handleClaim = (memberId: number, prizeId: number) => {
+    setMembers(members.map(m => m.id === memberId ? {
+      ...m, prizes: m.prizes.map(p => p.id === prizeId ? { ...p, claimed: true } : p)
+    } : m));
+    if (selectedMember && selectedMember.id === memberId) {
+      setSelectedMember(prev => prev ? {
+        ...prev, prizes: prev.prizes.map(p => p.id === prizeId ? { ...p, claimed: true } : p)
+      } : null);
+    }
+  };
+
   const handleNavigate = (target: string) => {
     setView(target);
+    setSelectedMember(null);
   };
 
   return (
@@ -76,7 +100,7 @@ export default function KepalaToko({}: KepalaTokoProps) {
       <Sidebar currentView={view} onNavigate={handleNavigate} />
       <main className="flex-1 p-4 md:p-8 overflow-x-auto">
         <h1 className="text-3xl font-bold text-gray-800 mb-6">
-          {view === "kelola" ? "Kelola Hadiah Berlio Blast" : "Prize Logbook"}
+          {view === "kelola" ? "Kelola Hadiah Berlio Blast" : view === "logbook" ? "Prize Logbook" : "Membership"}
         </h1>
 
         {view === "kelola" ? (
@@ -154,7 +178,7 @@ export default function KepalaToko({}: KepalaTokoProps) {
               </tbody>
             </table>
           </div>
-        ) : (
+        ) : view === "logbook" ? (
           <div className="bg-white p-6 rounded-lg shadow">
             <table className="w-full text-left">
               <thead>
@@ -174,6 +198,53 @@ export default function KepalaToko({}: KepalaTokoProps) {
                 ))}
               </tbody>
             </table>
+          </div>
+        ) : (
+          <div className="bg-white p-6 rounded-lg shadow">
+            {selectedMember ? (
+              <div>
+                <button onClick={() => setSelectedMember(null)} className="mb-4 text-blue-600">&larr; Kembali ke list member</button>
+                <h2 className="text-2xl font-bold mb-4">Hadiah {selectedMember.name}</h2>
+                <div className="space-y-2">
+                  {selectedMember.prizes.map(p => (
+                    <div key={p.id} className="flex justify-between items-center border p-2 rounded">
+                      <span>{p.name}</span>
+                      {p.claimed ? <span className="text-green-600 font-semibold">Sudah Diklaim</span> : 
+                        <button onClick={() => handleClaim(selectedMember.id, p.id)} className="bg-blue-600 text-white px-3 py-1 rounded">Klaim</button>
+                      }
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div>
+                <h2 className="text-2xl font-bold mb-6 text-gray-800">Daftar Member</h2>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-gray-100 text-gray-700">
+                        <th className="p-4 border-b">Nama</th>
+                        <th className="p-4 border-b">Tanggal Bergabung</th>
+                        <th className="p-4 border-b">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {members.map(m => (
+                        <tr key={m.id} className="hover:bg-gray-50 border-b">
+                          <td className="p-4 font-medium">{m.name}</td>
+                          <td className="p-4 text-gray-600">{m.joinDate}</td>
+                          <td className="p-4">
+                            <button onClick={() => setSelectedMember(m)} className="text-blue-600 hover:text-blue-800 font-semibold">
+                              Lihat Hadiah
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </main>
