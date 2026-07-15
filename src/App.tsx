@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Home from "./pages/Home";
 import Prizes from "./pages/Prizes";
+import KepalaToko from "./pages/KepalaToko";
 import BerlioBlast from "./pages/BerlioBlas";
 
 export default function App() {
@@ -36,6 +37,11 @@ export default function App() {
   // If path is /prizes, render the prizes page
   if (currentPath === "/prizes") {
     return <Prizes navigate={navigate} />;
+  }
+
+  // If path is /kepala_toko, render the kepala toko page
+  if (currentPath === "/kepala_toko") {
+    return <KepalaToko navigate={navigate} />;
   }
 
   // Default is Home page (including / or other unknown paths)
