@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import Sidebar from "../components/Sidebar";
 
 interface Prize {
@@ -19,7 +19,7 @@ interface KepalaTokoProps {
   navigate: (path: string) => void;
 }
 
-export default function KepalaToko({ navigate }: KepalaTokoProps) {
+export default function KepalaToko({}: KepalaTokoProps) {
   const [view, setView] = useState("kelola");
   const [prizes, setPrizes] = useState<Prize[]>([
     { id: 1, name: "Rice Cooker", stock: 10, percentage: 5 },

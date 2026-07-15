@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import Home from "./pages/Home";
+import BerlioBlast from "./pages/BerlioBlas";
 import Prizes from "./pages/Prizes";
 import KepalaToko from "./pages/KepalaToko";
-import BerlioBlast from "./pages/BerlioBlas";
 
 export default function App() {
   // Read current path from window.location.pathname
@@ -31,7 +31,7 @@ export default function App() {
   // Route matching
   // If path is exactly /berlio_blast, render the game page
   if (currentPath === "/berlio_blast") {
-    return <BerlioBlast navigate={navigate} />;
+    return <BerlioBlast />;
   }
 
   // If path is /prizes, render the prizes page
