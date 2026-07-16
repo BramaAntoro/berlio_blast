@@ -50,10 +50,6 @@ interface StepInfo {
 }
 
 // --- SEGMEN MASCOT BERLIO (PAKAI GAMBAR ASLI, BUKAN VECTOR SVG LAGI) ---
-// Peta ekspresi -> gambar Berlio yang sesuai suasana/pose:
-// - berlio1: pose berdiri tenang sambil pegang koin (dipakai utk happy & wink)
-// - berlio2: pose kedua tangan ke atas merayakan (dipakai utk excited & celebrate)
-// - berlio3: pose kaget, tangan di pipi (dipakai utk surprised)
 const BERLIO_EXPRESSION_MAP: Record<
   "happy" | "excited" | "surprised" | "wink" | "celebrate",
   string
@@ -87,31 +83,30 @@ function BerlioMascot({
 
 export default function BerlioBlast() {
   // --- STATE PERMAINAN ---
-  const [currentStep, setCurrentStep] = useState<"masukkan_koin" | "playing">("masukkan_koin");
+  const [currentStep, setCurrentStep] = useState<"masukkan_koin" | "playing">(
+    "masukkan_koin",
+  );
 
-  // Saldo total Blast Coin yang dimiliki pemain (belum dimasukkan ke mesin)
   const [coinBalance, setCoinBalance] = useState<number>(5);
-  // Koin yang sudah dimasukkan ke slot di Step 1, menunggu ditekan "Mulai Main"
   const [insertedCoins, setInsertedCoins] = useState<number>(0);
-  // Koin yang sudah "aktif" di dalam mesin dan bisa dipakai untuk menarik tuas (Step 2-4)
   const [coinCount, setCoinCount] = useState<number>(0);
 
-  const [isInsertingCoin, setIsInsertingCoin] = useState<boolean>(false); // animasi koin masuk ke slot (Step 1)
+  const [isInsertingCoin, setIsInsertingCoin] = useState<boolean>(false);
 
   const [angle, setAngle] = useState<number>(0);
   const [isDragging, setIsDragging] = useState<boolean>(false);
-  const [spinState, setSpinState] = useState<"stop" | "fast" | "medium" | "slow">("stop");
+  const [spinState, setSpinState] = useState<
+    "stop" | "fast" | "medium" | "slow"
+  >("stop");
 
   const [droppedCapsule, setDroppedCapsule] = useState<string | null>(null);
   const [reward, setReward] = useState<string | null>(null);
   const [showModal, setShowModal] = useState<boolean>(false);
-  const [isCapsuleOpening, setIsCapsuleOpening] = useState<boolean>(false); // suspense shaking stage
+  const [isCapsuleOpening, setIsCapsuleOpening] = useState<boolean>(false);
   const [isCapsuleOpened, setIsCapsuleOpened] = useState<boolean>(false);
 
-  // Efek peledakan gacha kapsul (Step 4) yang berhamburan dari tengah kubah
   const [flyingCapsules, setFlyingCapsules] = useState<FlyingCapsuleItem[]>([]);
 
-  // Dipakai untuk "me-restart" animasi burst/confetti/flash setiap ada kejadian baru
   const [dropCounter, setDropCounter] = useState<number>(0);
   const [flashTrigger, setFlashTrigger] = useState<number>(0);
 
@@ -122,6 +117,41 @@ export default function BerlioBlast() {
   const tuasRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const fadeIntervalRef = useRef<number | null>(null);
+
+  // =========================================================================
+  // === KONFIGURASI POSISI "KACA" MESIN (DOME) — SATU SUMBER KEBENARAN ===
+  // Semua elemen yang harus tampil DI DALAM kubah kaca (aura cahaya, cincin
+  // efek putar, kompartemen kapsul, efek energi saat tuas ditarik) sekarang
+  // memakai nilai yang SAMA dari objek ini. Sebelumnya nilai ini di-hardcode
+  // terpisah di beberapa tempat dan sedikit berbeda-beda (mis. 64%/36% vs
+  // 62%/34%), itulah yang bikin kapsul terlihat tidak menempel pas di kaca.
+  //
+  // Cara kalibrasi ke gambar mesin_kosong.png milikmu:
+  // 1. Set SHOW_DOME_DEBUG = true di bawah ini.
+  // 2. Buka aplikasi, kamu akan melihat garis putus-putus merah menandai
+  //    area yang dianggap "kaca" oleh kode.
+  // 3. Ubah angka top/left/width/height (dalam %) sampai garis itu pas
+  //    menutupi kubah kaca asli di gambar.
+  // 4. Set SHOW_DOME_DEBUG kembali ke false.
+  // =========================================================================
+  const DOME = {
+    top: 59, // jarak dari atas container mesin (dalam %)
+    left: 50, // jarak dari kiri container mesin (dalam %)
+    width: 58, // lebar area kaca (dalam % dari lebar container mesin)
+    height: 27, // tinggi area kaca (dalam % dari tinggi container mesin)
+  };
+  const SHOW_DOME_DEBUG = false;
+
+  const domeBoxStyle: React.CSSProperties = {
+    top: `${DOME.top}%`,
+    left: `${DOME.left}%`,
+    width: `${DOME.width}%`,
+    height: `${DOME.height}%`,
+  };
+
+  // Batas bawah kubah kaca (dipakai supaya elemen lain, seperti layar LCD,
+  // tidak pernah digambar menimpa area kapsul di dalam kaca).
+  const DOME_BOTTOM = DOME.top + DOME.height; // = 86%
 
   useEffect(() => {
     const audio = new Audio(GACHA_AUDIO_URL);
@@ -145,9 +175,16 @@ export default function BerlioBlast() {
     }));
   }, []);
 
-  // Partikel confetti jatuh, dipakai saat hadiah terbuka (Step 6) supaya lebih ramai
   const confettiPieces = useMemo(() => {
-    const warna = ["#facc15", "#38bdf8", "#f472b6", "#a78bfa", "#34d399", "#fb923c", "#f87171"];
+    const warna = [
+      "#facc15",
+      "#38bdf8",
+      "#f472b6",
+      "#a78bfa",
+      "#34d399",
+      "#fb923c",
+      "#f87171",
+    ];
     return Array.from({ length: 60 }).map((_, i) => ({
       id: i,
       left: `${Math.random() * 100}%`,
@@ -159,7 +196,6 @@ export default function BerlioBlast() {
     }));
   }, []);
 
-  // Partikel yang "meledak" keluar dari titik kapsul jatuh, arah menyebar 360 derajat
   const burstParticles = useMemo(() => {
     const warna = ["#fde047", "#38bdf8", "#f472b6", "#a78bfa", "#4ade80"];
     return Array.from({ length: 18 }).map((_, i) => {
@@ -176,21 +212,33 @@ export default function BerlioBlast() {
   }, []);
 
   const listKapsul: KapsulItem[] = [
-    { id: 1, src: capsulBiru, top: "15%", left: "22%", rotation: "rotate-[15deg]", scale: "scale-[0.85]", zIndex: "z-10" },
-    { id: 2, src: capsulMerah, top: "10%", left: "38%", rotation: "rotate-[-35deg]", scale: "scale-[0.88]", zIndex: "z-10" },
-    { id: 3, src: capsulBiru, top: "12%", left: "54%", rotation: "rotate-[40deg]", scale: "scale-[0.85]", zIndex: "z-10" },
-    { id: 4, src: capsulMerah, top: "20%", left: "66%", rotation: "rotate-[-12deg]", scale: "scale-[0.82]", zIndex: "z-10" },
-    { id: 5, src: capsulKuning, top: "32%", left: "12%", rotation: "rotate-[-60deg]", scale: "scale-95", zIndex: "z-20" },
-    { id: 6, src: capsulMerah, top: "24%", left: "26%", rotation: "rotate-[110deg]", scale: "scale-100", zIndex: "z-20" },
-    { id: 7, src: capsulKuning, top: "26%", left: "44%", rotation: "rotate-[15deg]", scale: "scale-100", zIndex: "z-20" },
-    { id: 8, src: capsulBiru, top: "30%", left: "58%", rotation: "rotate-[-50deg]", scale: "scale-95", zIndex: "z-20" },
-    { id: 9, src: capsulBiru, top: "44%", left: "16%", rotation: "rotate-[5deg]", scale: "scale-105", zIndex: "z-30" },
-    { id: 10, src: capsulMerah, top: "42%", left: "32%", rotation: "rotate-[-25deg]", scale: "scale-105", zIndex: "z-30" },
-    { id: 11, src: capsulKuning, top: "38%", left: "48%", rotation: "rotate-[75deg]", scale: "scale-105", zIndex: "z-30" },
-    { id: 12, src: capsulMerah, top: "42%", left: "64%", rotation: "rotate-[85deg]", scale: "scale-100", zIndex: "z-30" },
-    { id: 13, src: capsulMerah, top: "54%", left: "36%", rotation: "rotate-[12deg]", scale: "scale-110", zIndex: "z-40" },
-    { id: 14, src: capsulKuning, top: "52%", left: "22%", rotation: "rotate-[-20deg]", scale: "scale-105", zIndex: "z-40" },
-    { id: 15, src: capsulBiru, top: "50%", left: "52%", rotation: "rotate-[35deg]", scale: "scale-105", zIndex: "z-40" },
+    { id: 1, src: capsulBiru, top: "6%", left: "10%", rotation: "rotate-[15deg]", scale: "scale-90", zIndex: "z-10" },
+    { id: 2, src: capsulMerah, top: "3%", left: "27%", rotation: "rotate-[-35deg]", scale: "scale-95", zIndex: "z-10" },
+    { id: 3, src: capsulKuning, top: "5%", left: "44%", rotation: "rotate-[50deg]", scale: "scale-90", zIndex: "z-10" },
+    { id: 4, src: capsulBiru, top: "2%", left: "61%", rotation: "rotate-[-20deg]", scale: "scale-95", zIndex: "z-10" },
+    { id: 5, src: capsulMerah, top: "6%", left: "77%", rotation: "rotate-[30deg]", scale: "scale-90", zIndex: "z-10" },
+
+    { id: 6, src: capsulKuning, top: "20%", left: "4%", rotation: "rotate-[-60deg]", scale: "scale-95", zIndex: "z-15" },
+    { id: 7, src: capsulMerah, top: "18%", left: "20%", rotation: "rotate-[110deg]", scale: "scale-100", zIndex: "z-15" },
+    { id: 8, src: capsulBiru, top: "22%", left: "37%", rotation: "rotate-[15deg]", scale: "scale-95", zIndex: "z-15" },
+    { id: 9, src: capsulKuning, top: "19%", left: "54%", rotation: "rotate-[-50deg]", scale: "scale-100", zIndex: "z-15" },
+    { id: 10, src: capsulMerah, top: "23%", left: "70%", rotation: "rotate-[40deg]", scale: "scale-95", zIndex: "z-15" },
+    { id: 11, src: capsulBiru, top: "20%", left: "85%", rotation: "rotate-[-10deg]", scale: "scale-90", zIndex: "z-15" },
+
+    { id: 12, src: capsulMerah, top: "36%", left: "10%", rotation: "rotate-[5deg]", scale: "scale-105", zIndex: "z-20" },
+    { id: 13, src: capsulKuning, top: "34%", left: "28%", rotation: "rotate-[-25deg]", scale: "scale-100", zIndex: "z-20" },
+    { id: 14, src: capsulBiru, top: "38%", left: "46%", rotation: "rotate-[75deg]", scale: "scale-105", zIndex: "z-20" },
+    { id: 15, src: capsulMerah, top: "35%", left: "64%", rotation: "rotate-[85deg]", scale: "scale-100", zIndex: "z-20" },
+    { id: 16, src: capsulKuning, top: "37%", left: "81%", rotation: "rotate-[-15deg]", scale: "scale-105", zIndex: "z-20" },
+
+    { id: 17, src: capsulBiru, top: "52%", left: "16%", rotation: "rotate-[12deg]", scale: "scale-110", zIndex: "z-30" },
+    { id: 18, src: capsulKuning, top: "50%", left: "34%", rotation: "rotate-[-20deg]", scale: "scale-105", zIndex: "z-30" },
+    { id: 19, src: capsulMerah, top: "54%", left: "52%", rotation: "rotate-[35deg]", scale: "scale-110", zIndex: "z-30" },
+    { id: 20, src: capsulBiru, top: "51%", left: "70%", rotation: "rotate-[-45deg]", scale: "scale-105", zIndex: "z-30" },
+
+    { id: 21, src: capsulKuning, top: "62%", left: "22%", rotation: "rotate-[-8deg]", scale: "scale-115", zIndex: "z-35" },
+    { id: 22, src: capsulMerah, top: "60%", left: "42%", rotation: "rotate-[28deg]", scale: "scale-110", zIndex: "z-35" },
+    { id: 23, src: capsulBiru, top: "64%", left: "60%", rotation: "rotate-[-30deg]", scale: "scale-115", zIndex: "z-35" },
   ];
 
   const playAudio = () => {
@@ -215,7 +263,6 @@ export default function BerlioBlast() {
     }, 40);
   };
 
-  // --- Util suara pendek berbasis Web Audio API ---
   const getAudioCtx = (): AudioContext | null => {
     try {
       if (!audioCtxRef.current) {
@@ -238,22 +285,32 @@ export default function BerlioBlast() {
     startOffset: number,
     duration: number,
     type: OscillatorType = "sine",
-    volume = 0.22
+    volume = 0.22,
   ) => {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = type;
     osc.frequency.setValueAtTime(freq, ctx.currentTime + startOffset);
     gain.gain.setValueAtTime(0.0001, ctx.currentTime + startOffset);
-    gain.gain.linearRampToValueAtTime(volume, ctx.currentTime + startOffset + 0.01);
-    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + startOffset + duration);
+    gain.gain.linearRampToValueAtTime(
+      volume,
+      ctx.currentTime + startOffset + 0.01,
+    );
+    gain.gain.exponentialRampToValueAtTime(
+      0.0001,
+      ctx.currentTime + startOffset + duration,
+    );
     osc.connect(gain);
     gain.connect(ctx.destination);
     osc.start(ctx.currentTime + startOffset);
     osc.stop(ctx.currentTime + startOffset + duration + 0.05);
   };
 
-  const playNoiseBurst = (ctx: AudioContext, duration: number, volume = 0.3) => {
+  const playNoiseBurst = (
+    ctx: AudioContext,
+    duration: number,
+    volume = 0.3,
+  ) => {
     const bufferSize = Math.max(1, Math.floor(ctx.sampleRate * duration));
     const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
     const data = buffer.getChannelData(0);
@@ -274,7 +331,6 @@ export default function BerlioBlast() {
     noise.start();
   };
 
-  // Bunyi "cling" pendek saat koin dimasukkan ke slot
   const playCoinInsertSfx = () => {
     if (isMuted) return;
     const ctx = getAudioCtx();
@@ -283,7 +339,6 @@ export default function BerlioBlast() {
     playTone(ctx, 1568, 0.08, 0.18, "sine", 0.18);
   };
 
-  // Klik pendek untuk tombol umum
   const playClickSfx = () => {
     if (isMuted) return;
     const ctx = getAudioCtx();
@@ -291,7 +346,6 @@ export default function BerlioBlast() {
     playTone(ctx, 700, 0, 0.07, "square", 0.12);
   };
 
-  // Bunyi kecil saat tuas mulai dipegang/ditarik
   const playLeverGrabSfx = () => {
     if (isMuted) return;
     const ctx = getAudioCtx();
@@ -299,7 +353,6 @@ export default function BerlioBlast() {
     playTone(ctx, 240, 0, 0.09, "square", 0.09);
   };
 
-  // Dentuman "BLAST!" tepat saat tuas dilepas
   const playBlastImpactSfx = () => {
     if (isMuted) return;
     const ctx = getAudioCtx();
@@ -309,7 +362,6 @@ export default function BerlioBlast() {
     playNoiseBurst(ctx, 0.3, 0.28);
   };
 
-  // Suara "pop" kecil saat kapsul keluar dari mesin
   const playCapsulePopSfx = () => {
     if (isMuted) return;
     const ctx = getAudioCtx();
@@ -327,13 +379,14 @@ export default function BerlioBlast() {
     osc.stop(ctx.currentTime + 0.2);
   };
 
-  // Fanfare kecil naik-naik saat kapsul dibuka & hadiah terungkap
   const playRewardFanfareSfx = () => {
     if (isMuted) return;
     const ctx = getAudioCtx();
     if (!ctx) return;
-    const notes = [523.25, 659.25, 783.99, 1046.5]; // C5 - E5 - G5 - C6
-    notes.forEach((freq, i) => playTone(ctx, freq, i * 0.11, 0.28, "triangle", 0.22));
+    const notes = [523.25, 659.25, 783.99, 1046.5];
+    notes.forEach((freq, i) =>
+      playTone(ctx, freq, i * 0.11, 0.28, "triangle", 0.22),
+    );
   };
 
   const kocokHadiah = () => {
@@ -345,7 +398,6 @@ export default function BerlioBlast() {
     return "100 POIN / SNACK";
   };
 
-  // STEP 1 -> Masukkan Blast Coin SATU PER SATU.
   const handleMasukkanCoin = () => {
     if (isInsertingCoin) return;
     if (coinBalance <= 0) return;
@@ -386,12 +438,11 @@ export default function BerlioBlast() {
     setDroppedCapsule(null);
     setIsCapsuleOpening(false);
     setIsCapsuleOpened(false);
-    setFlyingCapsules([]); // membersihkan sisa kapsul terbang lama
+    setFlyingCapsules([]);
     setIsDragging(true);
     playAudio();
   };
 
-  // Suspense cracking kapsul saat di-tap di modal
   const handleOpenCapsule = () => {
     if (isCapsuleOpening || isCapsuleOpened) return;
 
@@ -399,7 +450,6 @@ export default function BerlioBlast() {
 
     const ctx = getAudioCtx();
     if (ctx && !isMuted) {
-      // Suara getaran rumbel beruntun
       let t = 0;
       const shakeInterval = setInterval(() => {
         if (t > 6) {
@@ -460,21 +510,22 @@ export default function BerlioBlast() {
         if (spinState === "fast") {
           setSpinState("medium");
           setCoinCount((prev) => Math.max(0, prev - 1));
-          setFlashTrigger((f) => f + 1); // kilatan layar tepat saat tuas dilepas
-          playBlastImpactSfx(); // dentuman "BLAST!" bersamaan dengan kilatan & getaran mesin
+          setFlashTrigger((f) => f + 1);
+          playBlastImpactSfx();
 
-          // MENEMBAKKAN 16 KAPSUL UNTUK EFEK PELEDAKAN YANG RAMAI! (Step 4)
           const capsuleImages = [capsulBiru, capsulKuning, capsulMerah];
           const listPeledakan = Array.from({ length: 16 }).map((_, idx) => {
             const angleDeg = Math.random() * 360;
-            const distance = 160 + Math.random() * 220; // seberapa jauh terbang (px)
-            const scale = 0.5 + Math.random() * 0.7; // skala akhir kapsul
-            const rot = Math.random() * 720 - 360; // rotasi akhir kapsul
-            const speed = 0.5 + Math.random() * 0.6; // durasi meluncur (detik)
-            const delay = Math.random() * 0.15; // penundaan waktu terbang staggered
+            const distance = 160 + Math.random() * 220;
+            const scale = 0.5 + Math.random() * 0.7;
+            const rot = Math.random() * 720 - 360;
+            const speed = 0.5 + Math.random() * 0.6;
+            const delay = Math.random() * 0.15;
             return {
               id: idx,
-              src: capsuleImages[Math.floor(Math.random() * capsuleImages.length)],
+              src: capsuleImages[
+                Math.floor(Math.random() * capsuleImages.length)
+              ],
               angle: angleDeg,
               distance,
               scale,
@@ -492,10 +543,11 @@ export default function BerlioBlast() {
             setTimeout(() => {
               setSpinState("stop");
               const pilihanGambar = [capsulBiru, capsulKuning, capsulMerah];
-              const kapsulTerpilih = pilihanGambar[Math.floor(Math.random() * pilihanGambar.length)];
+              const kapsulTerpilih =
+                pilihanGambar[Math.floor(Math.random() * pilihanGambar.length)];
               setDroppedCapsule(kapsulTerpilih);
               setReward(kocokHadiah());
-              setDropCounter((c) => c + 1); // restart animasi burst partikel & efek ramai lainnya
+              setDropCounter((c) => c + 1);
               playCapsulePopSfx();
             }, 450);
           }, 350);
@@ -521,7 +573,6 @@ export default function BerlioBlast() {
     };
   }, [isDragging, spinState]);
 
-  // --- BADGE LANGKAH AKTIF (1-6) ---
   const stepInfo: StepInfo = useMemo(() => {
     if (currentStep === "masukkan_koin") {
       return insertedCoins > 0
@@ -529,17 +580,29 @@ export default function BerlioBlast() {
         : { number: 1, label: "MASUKKAN BLAST COIN" };
     }
     if (showModal) {
-      return isCapsuleOpened ? { number: 6, label: "HADIAH MASUK!" } : { number: 5, label: "LIHAT HADIAHMU!" };
+      return isCapsuleOpened
+        ? { number: 6, label: "HADIAH MASUK!" }
+        : { number: 5, label: "LIHAT HADIAHMU!" };
     }
     if (droppedCapsule) return { number: 5, label: "LIHAT HADIAHMU!" };
-    if (isDragging || spinState === "fast") return { number: 3, label: "TARIK TUAS!" };
-    if (spinState === "medium" || spinState === "slow") return { number: 4, label: "BLASTING!" };
+    if (isDragging || spinState === "fast")
+      return { number: 3, label: "TARIK TUAS!" };
+    if (spinState === "medium" || spinState === "slow")
+      return { number: 4, label: "BLASTING!" };
     return { number: 2, label: "SIAP BLAST!" };
-  }, [currentStep, showModal, isCapsuleOpened, droppedCapsule, isDragging, spinState, insertedCoins]);
+  }, [
+    currentStep,
+    showModal,
+    isCapsuleOpened,
+    droppedCapsule,
+    isDragging,
+    spinState,
+    insertedCoins,
+  ]);
 
-  const tampilkanOverlayBlasting = spinState === "medium" || spinState === "slow";
+  const tampilkanOverlayBlasting =
+    spinState === "medium" || spinState === "slow";
 
-  // Perhitungan persentase kekuatan tarikan tuas untuk efek cahaya
   const chargePercent = Math.min(100, (angle / 30) * 100);
 
   return (
@@ -812,7 +875,9 @@ export default function BerlioBlast() {
         <span className="w-6 h-6 rounded-full bg-gradient-to-b from-amber-300 to-amber-600 text-slate-950 text-xs font-black flex items-center justify-center shadow-inner">
           {stepInfo.number}
         </span>
-        <span className="text-[11px] font-black text-amber-300 tracking-wider uppercase">{stepInfo.label}</span>
+        <span className="text-[11px] font-black text-amber-300 tracking-wider uppercase">
+          {stepInfo.label}
+        </span>
       </div>
 
       {/* Tombol mute/unmute suara, persisten di pojok kanan atas */}
@@ -822,7 +887,8 @@ export default function BerlioBlast() {
             const next = !prev;
             if (next && audioRef.current) {
               audioRef.current.pause();
-              if (fadeIntervalRef.current) clearInterval(fadeIntervalRef.current);
+              if (fadeIntervalRef.current)
+                clearInterval(fadeIntervalRef.current);
             }
             return next;
           });
@@ -861,32 +927,31 @@ export default function BerlioBlast() {
         )}
       </button>
 
-      {/* BERLIO CUTE MASCOT FLOATING COMPANION (Persisten di Kanan Bawah view utama) */}
+      {/* BERLIO CUTE MASCOT FLOATING COMPANION */}
       {currentStep === "playing" && !showModal && (
         <div className="absolute bottom-4 right-4 z-40 flex flex-col items-center pointer-events-none">
-          {/* Bubble dialog dinamis sesuai status permainan */}
           <div className="bg-[#0b1230]/95 border border-sky-500/30 px-3 py-1.5 rounded-xl text-[10px] text-sky-200 font-bold tracking-wide mb-1.5 shadow-[0_5px_15px_rgba(0,0,0,0.5)] max-w-[125px] text-center animate-pulse">
             {isDragging
               ? "TARIK LAGI! 🔥"
               : spinState === "fast"
-              ? "BERPUTAR! 🌀"
-              : spinState === "medium" || spinState === "slow"
-              ? "BOOM! BLAST! 🚀"
-              : droppedCapsule
-              ? "Buka kapsul! 🎁"
-              : "TARIK TUASNYA! 👇"}
+                ? "BERPUTAR! 🌀"
+                : spinState === "medium" || spinState === "slow"
+                  ? "BOOM! BLAST! 🚀"
+                  : droppedCapsule
+                    ? "Buka kapsul! 🎁"
+                    : "TARIK TUASNYA! 👇"}
           </div>
           <BerlioMascot
             expression={
               isDragging
                 ? "excited"
                 : spinState === "fast"
-                ? "surprised"
-                : spinState === "medium" || spinState === "slow"
-                ? "celebrate"
-                : droppedCapsule
-                ? "wink"
-                : "happy"
+                  ? "surprised"
+                  : spinState === "medium" || spinState === "slow"
+                    ? "celebrate"
+                    : droppedCapsule
+                      ? "wink"
+                      : "happy"
             }
             className="w-20 h-20 animate-bounce"
             style={{ animationDuration: "3s" }}
@@ -895,23 +960,26 @@ export default function BerlioBlast() {
       )}
 
       {/* =========================================================================
-          STEP 1: MASUKKAN BLAST COIN (satu per satu, lalu tekan Mulai Main)
+          STEP 1: MASUKKAN BLAST COIN
          ========================================================================= */}
       {currentStep === "masukkan_koin" && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-[4px] p-4">
           <div className="modal-pop relative w-full max-w-[340px] aspect-[3/4.2] rounded-[28px] bg-gradient-to-b from-[#071130] to-[#03071a] border border-slate-800 p-6 flex flex-col items-center justify-between shadow-[0_25px_60px_rgba(0,0,0,0.95)] overflow-visible">
-            
-            {/* Mascot Companion di Atas Kartu */}
             <div className="absolute top-[-52px] z-20 flex flex-col items-center pointer-events-none">
-              <BerlioMascot expression="happy" className="w-24 h-24 animate-bounce" style={{ animationDuration: "2.8s" }} />
+              <BerlioMascot
+                expression="happy"
+                className="w-24 h-24 animate-bounce"
+                style={{ animationDuration: "2.8s" }}
+              />
               <div className="bg-sky-400 text-slate-950 font-black text-[9px] tracking-widest px-2.5 py-0.5 rounded-full uppercase shadow-md -mt-1.5 animate-pulse">
                 HALO KAK! 👋
               </div>
             </div>
 
-            {/* Judul Atas sesuai Step 1 di gambar panduan */}
             <div className="text-center mt-8 z-10">
-              <h3 className="text-xl font-black text-white tracking-wider uppercase">MASUKKAN BLAST COIN</h3>
+              <h3 className="text-xl font-black text-white tracking-wider uppercase">
+                MASUKKAN BLAST COIN
+              </h3>
               <p className="text-amber-400 text-[11px] font-bold tracking-widest uppercase mt-1">
                 Saldo Blast Coin: {coinBalance}
               </p>
@@ -920,41 +988,44 @@ export default function BerlioBlast() {
               </p>
             </div>
 
-            {/* Visual Slot Koin + Animasi Koin Masuk */}
             <div className="relative flex flex-col items-center justify-center my-auto w-full z-10">
-              {/* Badan mesin sederhana bergaya slot koin */}
               <div className="relative w-40 h-44 rounded-2xl bg-gradient-to-b from-[#12234f] to-[#0a1636] border-2 border-sky-400/20 shadow-[inset_0_0_25px_rgba(56,189,248,0.15),0_10px_25px_rgba(0,0,0,0.5)] flex flex-col items-center justify-end pb-6 overflow-hidden">
                 <div className="absolute top-3 left-1/2 -translate-x-1/2 text-[10px] font-black text-sky-300/70 tracking-[0.2em] uppercase">
                   Berlio Blast
                 </div>
 
-                {/* Koin yang meluncur masuk saat tombol ditekan */}
                 {isInsertingCoin && (
                   <div className="coin-slide-in absolute top-8 w-11 h-11 rounded-full bg-gradient-to-b from-yellow-300 via-amber-400 to-amber-600 border-2 border-yellow-100/50 flex items-center justify-center shadow-[0_4px_10px_rgba(217,119,6,0.6)] z-20">
-                    <span className="text-white text-lg font-black italic">B</span>
+                    <span className="text-white text-lg font-black italic">
+                      B
+                    </span>
                   </div>
                 )}
 
-                {/* Tumpukan koin yang sudah masuk */}
                 {insertedCoins > 0 && (
                   <div className="absolute bottom-8 flex items-center justify-center gap-[-6px]">
-                    {Array.from({ length: Math.min(insertedCoins, 5) }).map((_, idx) => (
-                      <div
-                        key={idx}
-                        className="w-6 h-6 rounded-full bg-gradient-to-b from-yellow-300 via-amber-400 to-amber-600 border border-yellow-100/50 shadow-[0_2px_6px_rgba(217,119,6,0.5)] -ml-2 first:ml-0"
-                      />
-                    ))}
+                    {Array.from({ length: Math.min(insertedCoins, 5) }).map(
+                      (_, idx) => (
+                        <div
+                          key={idx}
+                          className="w-6 h-6 rounded-full bg-gradient-to-b from-yellow-300 via-amber-400 to-amber-600 border border-yellow-100/50 shadow-[0_2px_6px_rgba(217,119,6,0.5)] -ml-2 first:ml-0"
+                        />
+                      ),
+                    )}
                     {insertedCoins > 5 && (
-                      <span className="text-amber-300 text-[10px] font-black ml-1">+{insertedCoins - 5}</span>
+                      <span className="text-amber-300 text-[10px] font-black ml-1">
+                        +{insertedCoins - 5}
+                      </span>
                     )}
                   </div>
                 )}
 
-                {/* Slot koin dengan indikator LED */}
                 <div className="relative w-16 h-3 rounded-full bg-black/70 border border-sky-400/30 shadow-[inset_0_2px_4px_rgba(0,0,0,0.8)] flex items-center justify-center">
                   <div
                     className={`absolute w-[92%] h-[75%] rounded-full transition-all duration-300 ${
-                      isInsertingCoin ? "bg-emerald-500/40 shadow-[0_0_8px_rgba(16,185,129,0.8)]" : "bg-sky-500/20"
+                      isInsertingCoin
+                        ? "bg-emerald-500/40 shadow-[0_0_8px_rgba(16,185,129,0.8)]"
+                        : "bg-sky-500/20"
                     }`}
                   />
                 </div>
@@ -967,7 +1038,6 @@ export default function BerlioBlast() {
               </p>
             </div>
 
-            {/* Tombol Aksi */}
             <div className="w-full flex flex-col items-center mb-2 gap-2.5 z-10">
               <button
                 onClick={handleMasukkanCoin}
@@ -976,7 +1046,11 @@ export default function BerlioBlast() {
               >
                 <div className="shine-sweep-button" />
                 <span className="relative z-10">
-                  {isInsertingCoin ? "MEMASUKKAN..." : coinBalance <= 0 ? "SALDO HABIS" : "MASUKKAN 1 COIN"}
+                  {isInsertingCoin
+                    ? "MEMASUKKAN..."
+                    : coinBalance <= 0
+                      ? "SALDO HABIS"
+                      : "MASUKKAN 1 COIN"}
                 </span>
               </button>
 
@@ -1002,7 +1076,6 @@ export default function BerlioBlast() {
       {/* =========================================================================
           STEP 2-4: MESIN GACHA (SIAP BLAST -> TARIK TUAS -> BLASTING)
          ========================================================================= */}
-      {/* Kilatan layar penuh tepat saat tuas dilepas, memberi hentakan kuat */}
       {spinState === "medium" && (
         <div
           key={`flash-${flashTrigger}`}
@@ -1012,10 +1085,14 @@ export default function BerlioBlast() {
 
       <div
         className={`relative w-full max-w-[520px] aspect-[550/631] flex items-center justify-center scale-105 md:scale-110 transition-transform [perspective:1000px] ${
-          spinState === "medium" || spinState === "slow" ? "machine-shake-heavy" : ""
+          spinState === "medium" || spinState === "slow"
+            ? "machine-shake-heavy"
+            : ""
         }`}
       >
-        {isDragging && <div className="absolute inset-0 z-50 cursor-grabbing bg-transparent" />}
+        {isDragging && (
+          <div className="absolute inset-0 z-50 cursor-grabbing bg-transparent" />
+        )}
 
         {/* Indikator Saldo Koin Sederhana di Atas Kaca Mesin */}
         <div className="absolute top-[3%] left-1/2 -translate-x-1/2 text-center z-40 pointer-events-none w-full">
@@ -1024,61 +1101,98 @@ export default function BerlioBlast() {
           </span>
         </div>
 
-        {/* INTELLIGENT HOLOGRAPHIC LCD SCREEN (Menempel Presisi di Tengah Base Mesin Gacha) */}
+        {/*
+          LCD SCREEN
+          -----------------------------------------------------------------
+          CATATAN PERBAIKAN: sebelumnya layar LCD ini diposisikan di
+          top-[68.5%], yang jatuh DI DALAM rentang vertikal kubah kaca
+          (DOME.top 59% s/d DOME.top+DOME.height = 86%). Karena elemen ini
+          dirender setelah kompartemen kapsul dan sama-sama z-40, browser
+          menggambarnya di lapisan paling atas sehingga kotak teks
+          "SIAP? Tarik tuas untuk mulai!" menimpa tumpukan kapsul di dalam
+          kaca (persis seperti pada screenshot yang dilampirkan).
+
+          Perbaikannya: geser layar LCD ke bawah, keluar dari area kaca
+          (DOME_BOTTOM = 86%), supaya tidak pernah lagi menutupi kapsul.
+          Sekarang ia duduk di panel konsol mesin, di bawah kubah kaca.
+        */}
         {currentStep === "playing" && (
-          <div className="absolute top-[68.5%] left-[50%] -translate-x-1/2 w-[34%] h-[8%] z-40 pointer-events-none flex flex-col items-center justify-center overflow-hidden">
+          <div
+            className="absolute left-[50%] -translate-x-1/2 w-[34%] h-[7.5%] z-40 pointer-events-none flex flex-col items-center justify-center overflow-hidden"
+            style={{ top: `${DOME_BOTTOM + 3}%` }}
+          >
             <div className="relative w-full h-full bg-[#03153c]/92 border border-sky-400/40 rounded-md flex flex-col items-center justify-center p-1 shadow-[inset_0_0_10px_rgba(56,189,248,0.55),0_0_12px_rgba(56,189,248,0.35)]">
-              {/* Scanline CRT style overlay */}
               <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,3px_100%] pointer-events-none opacity-60" />
 
               {isDragging || spinState === "fast" ? (
                 <div className="text-center animate-pulse">
-                  <p className="text-amber-400 text-[10px] font-black tracking-widest uppercase">BLAST!</p>
-                  <p className="text-sky-300 text-[7px] font-bold">Semoga beruntung, Kak!</p>
+                  <p className="text-amber-400 text-[10px] font-black tracking-widest uppercase">
+                    BLAST!
+                  </p>
+                  <p className="text-sky-300 text-[7px] font-bold">
+                    Semoga beruntung, Kak!
+                  </p>
                 </div>
               ) : spinState === "medium" || spinState === "slow" ? (
                 <div className="text-center">
                   <p className="text-pink-500 text-[10px] font-black tracking-widest uppercase animate-bounce">
                     BLASTING!
                   </p>
-                  <p className="text-pink-300 text-[7px] font-bold">Tunggu sebentar...</p>
+                  <p className="text-pink-300 text-[7px] font-bold">
+                    Tunggu sebentar...
+                  </p>
                 </div>
               ) : coinCount <= 0 ? (
                 <div className="text-center">
-                  <p className="text-red-400 text-[9px] font-black tracking-widest uppercase">KOIN HABIS</p>
-                  <p className="text-slate-400 text-[7px] font-bold">Isi koin lagi ya!</p>
+                  <p className="text-red-400 text-[9px] font-black tracking-widest uppercase">
+                    KOIN HABIS
+                  </p>
+                  <p className="text-slate-400 text-[7px] font-bold">
+                    Isi koin lagi ya!
+                  </p>
                 </div>
               ) : (
                 <div className="text-center">
-                  <p className="text-sky-300 text-[10px] font-black tracking-widest uppercase">SIAP?</p>
-                  <p className="text-slate-300 text-[7px] font-bold">Tarik tuas untuk mulai!</p>
+                  <p className="text-sky-300 text-[10px] font-black tracking-widest uppercase">
+                    SIAP?
+                  </p>
+                  <p className="text-slate-300 text-[7px] font-bold">
+                    Tarik tuas untuk mulai!
+                  </p>
                 </div>
               )}
             </div>
           </div>
         )}
 
-        {/* Tombol kembali isi koin, muncul saat koin di mesin sudah habis */}
-        {currentStep === "playing" && coinCount <= 0 && !isDragging && spinState === "stop" && !droppedCapsule && (
-          <div className="absolute top-[16%] left-1/2 -translate-x-1/2 z-40">
-            <button
-              onClick={handleKembaliIsiKoin}
-              className="rounded-full bg-gradient-to-b from-[#fcd34d] via-[#f59e0b] to-[#b45309] px-5 py-2 text-xs font-black text-slate-950 tracking-widest shadow-[0_4px_12px_rgba(245,158,11,0.4)] hover:scale-105 transition active:scale-[0.96] uppercase relative overflow-hidden"
-            >
-              <div className="shine-sweep-button" />
-              Isi Koin Lagi
-            </button>
-          </div>
-        )}
+        {currentStep === "playing" &&
+          coinCount <= 0 &&
+          !isDragging &&
+          spinState === "stop" &&
+          !droppedCapsule && (
+            <div className="absolute top-[16%] left-1/2 -translate-x-1/2 z-40">
+              <button
+                onClick={handleKembaliIsiKoin}
+                className="rounded-full bg-gradient-to-b from-[#fcd34d] via-[#f59e0b] to-[#b45309] px-5 py-2 text-xs font-black text-slate-950 tracking-widest shadow-[0_4px_12px_rgba(245,158,11,0.4)] hover:scale-105 transition active:scale-[0.96] uppercase relative overflow-hidden"
+              >
+                <div className="shine-sweep-button" />
+                Isi Koin Lagi
+              </button>
+            </div>
+          )}
 
-        {/* Aura Kaca */}
-        <div className="glass-glow absolute top-[8%] left-1/2 -translate-x-1/2 w-[78%] h-[45%] rounded-full bg-[radial-gradient(circle,rgba(56,189,248,0.35),transparent_70%)] blur-2xl z-0 pointer-events-none" />
-
-        {/* Cincin Efek Putaran Kapsul */}
+        {/* Aura Kaca — sekarang memakai DOME yang sama dengan kompartemen kapsul */}
         <div
-          className={`absolute top-[40%] left-[50%] -translate-x-1/2 -translate-y-1/2 w-[94%] h-[48%] z-35 pointer-events-none overflow-visible transition-all duration-500 ease-in-out
+          className="glass-glow absolute -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(56,189,248,0.35),transparent_70%)] blur-2xl z-0 pointer-events-none"
+          style={domeBoxStyle}
+        />
+
+        {/* Cincin Efek Putaran Kapsul — sebelumnya pakai ukuran berbeda (62%/34%), sekarang disamakan */}
+        <div
+          className={`absolute -translate-x-1/2 -translate-y-1/2 z-[35] pointer-events-none overflow-visible transition-all duration-500 ease-in-out
             ${spinState === "fast" ? "opacity-100 scale-100" : "opacity-0 scale-0 pointer-events-none"}
           `}
+          style={domeBoxStyle}
         >
           <div className="gacha-3d-ring absolute top-1/2 left-1/2 w-[102%] aspect-square rounded-full border-[3px] border-amber-300 shadow-[inset_0_0_15px_rgba(234,179,8,0.6)]">
             {[0, 90, 180, 270].map((deg) => (
@@ -1088,7 +1202,7 @@ export default function BerlioBlast() {
                 style={{
                   top: "50%",
                   left: "50%",
-                  transform: `rotate(${deg}deg) translate(120px) translate(-50%, -50%)`,
+                  transform: `rotate(${deg}deg) translate(90px) translate(-50%, -50%)`,
                   animationDuration: "0.6s",
                 }}
               />
@@ -1100,22 +1214,32 @@ export default function BerlioBlast() {
         <img
           src={mesinKosong}
           alt="Mesin Gacha"
-          className="w-full h-full object-contain pointer-events-none z-30 drop-shadow-[0_20px_35px_rgba(0,0,0,0.55)]"
+          className="w-[85%] h-[85%] object-contain pointer-events-none z-30 drop-shadow-[0_20px_35px_rgba(0,0,0,0.55)] mx-auto"
         />
 
-        {/* Kompartemen Kapsul di Dalam Kubah */}
-        <div className="absolute top-[21%] left-[16%] w-[68%] h-[38%] pointer-events-none bg-transparent z-40 overflow-hidden rounded-full">
+        {/* Kompartemen Kapsul di Dalam Kubah Kaca — DOME dipakai di sini juga */}
+        <div
+          className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-none bg-transparent z-40 overflow-hidden rounded-full"
+          style={domeBoxStyle}
+        >
+          {SHOW_DOME_DEBUG && (
+            <div className="absolute inset-0 rounded-full border-2 border-dashed border-red-500 pointer-events-none z-[999]" />
+          )}
           <div className="relative w-full h-full">
             {listKapsul.map((kapsul) => {
               let animationClass = "";
               if (spinState === "fast") animationClass = "animate-fast";
-              else if (spinState === "medium") animationClass = "animate-medium";
+              else if (spinState === "medium")
+                animationClass = "animate-medium";
               else if (spinState === "slow") animationClass = "animate-slow";
 
-              // Efek melayang lembut saat berhenti (Step 2 - Idling)
               let floatClass = "";
               if (spinState === "stop" && !isDragging) {
-                const floatTypes = ["float-capsule-a", "float-capsule-b", "float-capsule-c"];
+                const floatTypes = [
+                  "float-capsule-a",
+                  "float-capsule-b",
+                  "float-capsule-c",
+                ];
                 floatClass = floatTypes[kapsul.id % floatTypes.length];
               }
 
@@ -1124,7 +1248,7 @@ export default function BerlioBlast() {
                   key={kapsul.id}
                   src={kapsul.src}
                   alt="Capsul"
-                  className={`absolute w-[22%] aspect-square object-contain opacity-100 
+                  className={`absolute w-[26%] aspect-square object-contain opacity-100 
                     ${animationClass ? animationClass : `transition-all duration-1000 ${kapsul.rotation} ${kapsul.scale}`} 
                     ${floatClass}
                     ${kapsul.zIndex}`}
@@ -1133,21 +1257,35 @@ export default function BerlioBlast() {
               );
             })}
           </div>
+          {/* Vignette tepi kaca: menggelapkan pinggir kompartemen supaya bola di
+              tepi terlihat "masuk" ke lengkungan kaca, bukan seperti tempelan
+              datar di atas rangka mesin. Murni dekoratif, tidak mengubah logika. */}
+          <div
+            className="absolute inset-0 rounded-full pointer-events-none"
+            style={{
+              boxShadow:
+                "inset 0 0 18px 6px rgba(2,6,23,0.55), inset 0 10px 20px rgba(2,6,23,0.35)",
+            }}
+          />
         </div>
 
-        {/* Efek Pengisian Energi Kubah Saat Tuas Ditarik (Step 3) */}
+        {/* Efek Pengisian Energi Kubah Saat Tuas Ditarik — DOME dipakai di sini juga */}
         {isDragging && (
           <div
-            className="absolute top-[21%] left-[16%] w-[68%] h-[38%] pointer-events-none z-35 rounded-full overflow-hidden transition-all duration-300"
+            className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-none z-[45] rounded-full overflow-hidden transition-all duration-300"
             style={{
+              ...domeBoxStyle,
               background: `radial-gradient(circle, rgba(56, 189, 248, ${0.1 + (chargePercent / 100) * 0.4}) 0%, transparent 70%)`,
               boxShadow: `inset 0 0 ${20 + (chargePercent / 100) * 50}px rgba(56, 189, 248, ${0.2 + (chargePercent / 100) * 0.6})`,
             }}
           >
-            {/* Sambaran petir listrik ketika ditarik maksimal */}
             {angle > 15 && (
               <div className="absolute inset-0 opacity-80 animate-pulse">
-                <svg viewBox="0 0 100 100" className="w-full h-full animate-spin" style={{ animationDuration: "1s" }}>
+                <svg
+                  viewBox="0 0 100 100"
+                  className="w-full h-full animate-spin"
+                  style={{ animationDuration: "1s" }}
+                >
                   <path
                     d="M 50,10 L 45,35 L 55,40 L 50,60 L 60,65 L 50,90"
                     fill="none"
@@ -1172,23 +1310,36 @@ export default function BerlioBlast() {
           </div>
         )}
 
-        {/* STEP 4: OVERLAY "BLASTING!" - COMIC BLAST BURST & FLYING CAPSULES */}
+        {/* STEP 4: OVERLAY "BLASTING!" */}
         {tampilkanOverlayBlasting && (
           <div className="absolute inset-0 z-50 flex flex-col items-center justify-center pointer-events-none">
-            {/* Aura cahaya di belakang badge komik */}
             <div className="blast-pulse-bg absolute top-1/2 left-1/2 w-[90%] aspect-square rounded-full bg-[radial-gradient(circle,rgba(251,191,36,0.45),transparent_70%)] blur-2xl -translate-x-1/2 -translate-y-1/2" />
 
-            {/* Giant 3D Comic Starburst Panel */}
             <div className="relative w-[115%] h-auto max-w-[430px] aspect-[2/1] animate-bounce-short z-50">
-              <svg viewBox="0 0 500 250" className="w-full h-full drop-shadow-[0_12px_28px_rgba(249,115,22,0.65)]">
+              <svg
+                viewBox="0 0 500 250"
+                className="w-full h-full drop-shadow-[0_12px_28px_rgba(249,115,22,0.65)]"
+              >
                 <defs>
-                  <linearGradient id="goldGradComic" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <linearGradient
+                    id="goldGradComic"
+                    x1="0%"
+                    y1="0%"
+                    x2="0%"
+                    y2="100%"
+                  >
                     <stop offset="0%" stopColor="#ffffff" />
                     <stop offset="25%" stopColor="#fef08a" />
                     <stop offset="65%" stopColor="#f59e0b" />
                     <stop offset="100%" stopColor="#b45309" />
                   </linearGradient>
-                  <linearGradient id="burstGradComic" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <linearGradient
+                    id="burstGradComic"
+                    x1="0%"
+                    y1="0%"
+                    x2="100%"
+                    y2="100%"
+                  >
                     <stop offset="0%" stopColor="#dc2626" />
                     <stop offset="40%" stopColor="#ea580c" />
                     <stop offset="75%" stopColor="#facc15" />
@@ -1196,14 +1347,27 @@ export default function BerlioBlast() {
                   </linearGradient>
                   <mask id="dotsMaskComic">
                     <rect x="0" y="0" width="500" height="250" fill="#fff" />
-                    <pattern id="dotPatternComic" x="0" y="0" width="10" height="10" patternUnits="userSpaceOnUse">
+                    <pattern
+                      id="dotPatternComic"
+                      x="0"
+                      y="0"
+                      width="10"
+                      height="10"
+                      patternUnits="userSpaceOnUse"
+                    >
                       <circle cx="5" cy="5" r="2.5" fill="#000" />
                     </pattern>
-                    <rect x="0" y="0" width="500" height="250" fill="url(#dotPatternComic)" opacity="0.15" />
+                    <rect
+                      x="0"
+                      y="0"
+                      width="500"
+                      height="250"
+                      fill="url(#dotPatternComic)"
+                      opacity="0.15"
+                    />
                   </mask>
                 </defs>
 
-                {/* Outer Red Starburst */}
                 <path
                   d="M 250,5 L 285,75 L 360,40 L 325,105 L 420,105 L 330,135 L 390,210 L 295,175 L 250,245 L 205,175 L 110,210 L 170,135 L 80,105 L 175,105 L 140,40 L 215,75 Z"
                   fill="url(#burstGradComic)"
@@ -1213,7 +1377,6 @@ export default function BerlioBlast() {
                   className="animate-pulse"
                 />
 
-                {/* Inner Yellow Starburst */}
                 <path
                   d="M 250,25 L 275,85 L 335,60 L 305,110 L 385,110 L 310,132 L 355,190 L 280,162 L 250,215 L 220,162 L 145,190 L 190,132 L 115,110 L 195,110 L 165,60 L 225,85 Z"
                   fill="#facc15"
@@ -1223,15 +1386,18 @@ export default function BerlioBlast() {
                   opacity="0.95"
                 />
 
-                {/* Halftone Dot Overlay */}
                 <path
                   d="M 250,25 L 275,85 L 335,60 L 305,110 L 385,110 L 310,132 L 355,190 L 280,162 L 250,215 L 220,162 L 145,190 L 190,132 L 115,110 L 195,110 L 165,60 L 225,85 Z"
                   fill="#ea580c"
                   mask="url(#dotsMaskComic)"
                 />
 
-                {/* Comic Speed lines */}
-                <g stroke="#ffffff" strokeWidth="2.5" opacity="0.65" strokeLinecap="round">
+                <g
+                  stroke="#ffffff"
+                  strokeWidth="2.5"
+                  opacity="0.65"
+                  strokeLinecap="round"
+                >
                   <line x1="250" y1="125" x2="280" y2="40" />
                   <line x1="250" y1="125" x2="380" y2="70" />
                   <line x1="250" y1="125" x2="410" y2="150" />
@@ -1242,7 +1408,6 @@ export default function BerlioBlast() {
                   <line x1="250" y1="125" x2="220" y2="40" />
                 </g>
 
-                {/* Black shadow extrusion */}
                 <text
                   x="254"
                   y="152"
@@ -1255,7 +1420,6 @@ export default function BerlioBlast() {
                 >
                   BLAST!
                 </text>
-                {/* Outermost border */}
                 <text
                   x="250"
                   y="148"
@@ -1271,7 +1435,6 @@ export default function BerlioBlast() {
                 >
                   BLAST!
                 </text>
-                {/* White stroke outline */}
                 <text
                   x="250"
                   y="148"
@@ -1287,7 +1450,6 @@ export default function BerlioBlast() {
                 >
                   BLAST!
                 </text>
-                {/* Gold Gradient Fill */}
                 <text
                   x="250"
                   y="148"
@@ -1302,12 +1464,11 @@ export default function BerlioBlast() {
                 </text>
               </svg>
             </div>
-            {/* Spinning background sunburst */}
             <div className="absolute w-[180%] aspect-square border-none rounded-full pointer-events-none z-0 bg-[repeating-conic-gradient(from_0deg,rgba(251,191,36,0.15)_0deg_10deg,transparent_10deg_20deg)] animate-[spin_10s_linear_infinite]" />
           </div>
         )}
 
-        {/* Kapsul Peledakan yang Berhamburan ke Luar (Step 4 - Blasting) */}
+        {/* Kapsul Peledakan yang Berhamburan ke Luar (Step 4) */}
         {(spinState === "medium" || spinState === "slow") &&
           flyingCapsules.map((c) => {
             const rad = (c.angle * Math.PI) / 180;
@@ -1320,8 +1481,8 @@ export default function BerlioBlast() {
                 alt="Flying Capsule"
                 className="animate-capsule-fly absolute z-50 pointer-events-none w-14 h-14 object-contain"
                 style={{
-                  top: "40%",
-                  left: "50%",
+                  top: `${DOME.top}%`,
+                  left: `${DOME.left}%`,
                   ["--tx" as any]: tx,
                   ["--ty" as any]: ty,
                   ["--scale" as any]: c.scale,
@@ -1368,25 +1529,36 @@ export default function BerlioBlast() {
             onClick={() => setShowModal(true)}
             className="absolute bottom-[9.5%] left-[39%] w-[22%] aspect-square z-40 cursor-pointer animate-capsule-release flex items-center justify-center"
           >
-            <img src={droppedCapsule} alt="Kapsul Hadiah Keluar" className="capsule-pulse w-full h-full object-contain" />
+            <img
+              src={droppedCapsule}
+              alt="Kapsul Hadiah Keluar"
+              className="capsule-pulse w-full h-full object-contain"
+            />
           </div>
         )}
 
-        
-
-        {/* Tuas Kemudi Pemutar Mesin (Step 3: TARIK TUAS!) */}
+        {/* Tuas Kemudi Pemutar Mesin (Step 3) */}
         <div
           ref={tuasRef}
           onMouseDown={handleStart}
           onTouchStart={handleStart}
-          className={`absolute w-[25%] h-[35%] right-[7%] top-[40.5%] z-10 scale-[1.75] touch-none
+          className={`absolute w-[25%] h-[35%] left-[74.5%] top-[40.5%] z-10 scale-[1.75] touch-none
             ${
-              currentStep === "playing" && coinCount > 0 ? "cursor-grab active:cursor-grabbing lever-glow" : "cursor-not-allowed opacity-75"
+              currentStep === "playing" && coinCount > 0
+                ? "cursor-grab active:cursor-grabbing lever-glow"
+                : "cursor-not-allowed opacity-75"
             }
             ${!isDragging ? "transition-transform duration-600 cubic-bezier(0.16, 1, 0.3, 1)" : ""}`}
-          style={{ transformOrigin: "47% 81%", transform: `rotate(${angle}deg)` }}
+          style={{
+            transformOrigin: "47% 81%",
+            transform: `rotate(${angle}deg)`,
+          }}
         >
-          <img src={tuas} alt="Tuas" className="w-full h-full object-contain pointer-events-none" />
+          <img
+            src={tuas}
+            alt="Tuas"
+            className="w-full h-full object-contain pointer-events-none"
+          />
         </div>
       </div>
 
@@ -1397,9 +1569,7 @@ export default function BerlioBlast() {
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 backdrop-blur-sm p-4">
           <div className="modal-pop relative w-full max-w-[365px] rounded-[32px] bg-[#03091e] border-2 border-slate-800 p-6 flex flex-col items-center overflow-visible shadow-[0_0_50px_rgba(0,0,0,0.95)]">
             {!isCapsuleOpened ? (
-              /* --- STEP 5: LIHAT HADIAHMU! (TAP KAPSUL) --- */
               <div className="w-full flex flex-col items-center">
-                {/* Mascot Berlio (pose kaget) menemani proses membuka kapsul */}
                 <div className="absolute top-[-52px] z-20 flex flex-col items-center pointer-events-none">
                   <BerlioMascot
                     expression="surprised"
@@ -1412,7 +1582,9 @@ export default function BerlioBlast() {
                 </div>
 
                 <div className="text-center mt-8 z-10">
-                  <h2 className="text-4xl font-extrabold text-white tracking-wide mb-0.5">YEAY!</h2>
+                  <h2 className="text-4xl font-extrabold text-white tracking-wide mb-0.5">
+                    YEAY!
+                  </h2>
                   <p className="text-xs font-bold text-amber-300 tracking-widest uppercase opacity-95">
                     LIHAT HADIAHMU!
                   </p>
@@ -1422,11 +1594,14 @@ export default function BerlioBlast() {
                   <div className="sunburst-bg" />
                   <div className="absolute w-40 h-40 bg-amber-400/15 blur-2xl rounded-full" />
 
-                  {/* Efek sambaran petir menyala saat memecahkan kapsul */}
                   {isCapsuleOpening && (
                     <div className="absolute inset-0 z-20 pointer-events-none flex items-center justify-center">
                       <div className="absolute w-24 h-24 border-4 border-white rounded-full animate-ping opacity-75" />
-                      <svg viewBox="0 0 100 100" className="absolute w-56 h-56 animate-spin" style={{ animationDuration: "1.5s" }}>
+                      <svg
+                        viewBox="0 0 100 100"
+                        className="absolute w-56 h-56 animate-spin"
+                        style={{ animationDuration: "1.5s" }}
+                      >
                         {[0, 45, 90, 135, 180, 225, 270, 315].map((deg) => (
                           <line
                             key={deg}
@@ -1450,14 +1625,12 @@ export default function BerlioBlast() {
                     className={`relative w-44 h-44 flex items-center justify-center cursor-pointer transition-transform duration-200 hover:scale-105 active:scale-95
                       ${isCapsuleOpening ? "animate-capsule-crack z-30" : "capsule-modal-breath"}`}
                   >
-                    <img src={droppedCapsule || capsulKuning} alt="Kapsul" className="w-[85%] h-[85%] object-contain" />
-                    {!isCapsuleOpening && (
-                      <span className="absolute text-[#facc15] font-black text-5xl drop-shadow-[0_0_12px_rgba(250,204,21,0.95)]">
-                        ?
-                      </span>
-                    )}
+                    <img
+                      src={droppedCapsule || capsulKuning}
+                      alt="Kapsul"
+                      className="w-[85%] h-[85%] object-contain"
+                    />
                   </div>
-                  {/* Hint tangan menunjuk, meniru ikon "tap" pada gambar panduan */}
                   {!isCapsuleOpening && (
                     <span className="tap-hint-bounce absolute bottom-6 right-10 text-4xl drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)] pointer-events-none">
                       👆
@@ -1467,7 +1640,9 @@ export default function BerlioBlast() {
 
                 <div className="text-center px-4 mb-4 z-10">
                   <p className="text-slate-300 text-sm font-medium">
-                    {isCapsuleOpening ? "Membuka kapsul..." : "WOOHOO! Tap kapsul untuk membuka hadiah!"}
+                    {isCapsuleOpening
+                      ? "Membuka kapsul..."
+                      : "WOOHOO! Tap kapsul untuk membuka hadiah!"}
                   </p>
                 </div>
 
@@ -1483,10 +1658,11 @@ export default function BerlioBlast() {
                 </div>
               </div>
             ) : (
-              /* --- STEP 6: HADIAH MASUK! --- */
               <div className="w-full flex flex-col items-center relative">
-                {/* Confetti jatuh merayakan hadiah */}
-                <div key={`confetti-${dropCounter}`} className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+                <div
+                  key={`confetti-${dropCounter}`}
+                  className="absolute inset-0 overflow-hidden pointer-events-none z-0"
+                >
                   {confettiPieces.map((c) => (
                     <span
                       key={c.id}
@@ -1504,24 +1680,30 @@ export default function BerlioBlast() {
                   ))}
                 </div>
 
-                {/* Mascot Companion Merayakan Kemenangan */}
                 <div className="flex flex-col items-center justify-center -mt-8 -mb-1 z-25 relative">
-                  <BerlioMascot expression="celebrate" className="w-24 h-24 animate-bounce" style={{ animationDuration: "2s" }} />
+                  <BerlioMascot
+                    expression="celebrate"
+                    className="w-24 h-24 animate-bounce"
+                    style={{ animationDuration: "2s" }}
+                  />
                   <div className="bg-amber-400 text-slate-950 font-black text-[10px] tracking-wider px-3 py-1 rounded-full uppercase shadow-md -mt-2">
                     KAMU HEBAT! 🎉
                   </div>
                 </div>
 
                 <div className="text-center mt-3 z-10">
-                  <h2 className="pop-badge text-3xl font-black text-white tracking-wide">SELAMAT!</h2>
-                  <p className="text-xs font-bold text-slate-400 tracking-wider uppercase mt-1">KAMU MENDAPATKAN</p>
+                  <h2 className="pop-badge text-3xl font-black text-white tracking-wide">
+                    SELAMAT!
+                  </h2>
+                  <p className="text-xs font-bold text-slate-400 tracking-wider uppercase mt-1">
+                    KAMU MENDAPATKAN
+                  </p>
                 </div>
 
                 <div className="w-full px-1 my-6 z-10">
                   <div className="ticket-edge-cut w-full bg-gradient-to-br from-[#3b0764] via-[#5b21b6] to-[#4338ca] border-2 border-purple-500/30 p-6 py-9 relative shadow-[0_15px_30px_rgba(91,33,182,0.45)] flex flex-col items-center justify-center overflow-hidden">
                     <div className="absolute top-0 bottom-0 left-3.5 w-[1px] border-l border-dashed border-purple-300/25" />
                     <div className="absolute top-0 bottom-0 right-3.5 w-[1px] border-r border-dashed border-purple-300/25" />
-                    {/* Efek kilau yang menyapu tiket */}
                     <div className="shine-sweep absolute top-0 left-0 w-1/3 h-full bg-gradient-to-r from-transparent via-white/25 to-transparent pointer-events-none animate-[shineSweep_2.2s_ease-in-out_infinite]" />
                     <span className="text-purple-200/90 font-extrabold text-xs tracking-[0.25em] uppercase mb-1.5">
                       VOUCHER
@@ -1532,7 +1714,6 @@ export default function BerlioBlast() {
                   </div>
                 </div>
 
-                {/* Konfirmasi centang hijau */}
                 <div className="flex items-center gap-3 mb-5 px-2 z-10">
                   <div className="check-pop w-10 h-10 rounded-full bg-gradient-to-b from-emerald-400 to-emerald-600 flex items-center justify-center shadow-[0_0_14px_rgba(16,185,129,0.6)] shrink-0">
                     <svg
@@ -1547,7 +1728,9 @@ export default function BerlioBlast() {
                       <polyline points="20 6 9 17 4 12" />
                     </svg>
                   </div>
-                  <p className="text-slate-300 text-sm font-semibold">Hadiah berhasil ditambahkan ke akunmu!</p>
+                  <p className="text-slate-300 text-sm font-semibold">
+                    Hadiah berhasil ditambahkan ke akunmu!
+                  </p>
                 </div>
 
                 <div className="w-full px-2 pb-1 z-10 flex flex-col gap-2.5 relative">
