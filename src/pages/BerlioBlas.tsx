@@ -9,6 +9,7 @@ import capsulMerah from "../assets/images/capsul_merah.png";
 import berlio1 from "../assets/images/berlio1.png";
 import berlio2 from "../assets/images/berlio2.png";
 import berlio3 from "../assets/images/berlio3.png";
+import backgroundScene from "../assets/images/background.jpeg";
 
 const GACHA_AUDIO_URL =
   "https://upload.wikimedia.org/wikipedia/commons/4/47/Charkha_spinning_wheel_sound.mp3";
@@ -847,10 +848,15 @@ export default function BerlioBlast() {
         }
       `}</style>
 
-      {/* Background Utama */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#0a1128] via-[#0d1a3d] to-[#050814]" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_28%,rgba(56,189,248,0.22),transparent_60%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_85%,rgba(250,204,21,0.10),transparent_55%)]" />
+      {/* Background Utama — sekarang memakai gambar "Berlio Universe" */}
+      <div
+        className="absolute inset-0 bg-cover bg-center"
+        style={{ backgroundImage: `url(${backgroundScene})` }}
+      />
+      {/* Overlay gelap tipis supaya mesin gacha, teks, dan tombol di atasnya
+          tetap kontras dan mudah dibaca di atas gambar latar yang ramai. */}
+      <div className="absolute inset-0 bg-[#050a1f]/55" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_30%,rgba(56,189,248,0.12),transparent_60%)]" />
 
       {/* Taburan Bintang */}
       <div className="absolute inset-0 pointer-events-none">
